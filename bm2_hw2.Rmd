@@ -112,6 +112,67 @@ round(predict.glm(ll_fit, newdata = data.frame(dose = 0.01),type = 'response'), 
 
 ```{r}
 # logit
+beta0_logit = logit_fit$coefficients[1]
+beta1_logit = logit_fit$coefficients[2]
 
+beta_cov_logit = vcov(logit_fit)
+
+xhat_logit = - beta0_logit/ beta1_logit
+
+var_xhat_logit = beta_cov_logit[1,1]/(beta1_logit^2) + beta_cov_logit[2,2]*(beta0_logit^2)/(beta1_logit^4)
+ - 2*beta_cov_logit[1,2]*beta0_logit/(beta1_logit^3)
+
+xhat_logit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_logit)
+
+logit_row = round(exp(xhat_logit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_logit)), 3)
+```
+
+```{r}
+# probit
+beta0_probit = probit_fit$coefficients[1]
+beta1_probit = probit_fit$coefficients[2]
+
+beta_cov_probit = vcov(probit_fit)
+
+xhat_probit = - beta0_probit/ beta1_probit
+
+var_xhat_probit = beta_cov_probit[1,1]/(beta1_probit^2) + beta_cov_probit[2,2]*(beta0_probit^2)/(beta1_probit^4)
+ - 2*beta_cov_probit[1,2]*beta0_probit/(beta1_probit^3)
+
+xhat_probit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_probit)
+
+probit_row = round(exp(xhat_probit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_probit)), 3)
+```
+
+```{r}
+# log-log
+c = log(-log(0.5))
+
+beta0_ll = ll_fit$coefficients[1]
+beta1_ll = ll_fit$coefficients[2]
+
+beta_cov_ll = vcov(ll_fit)
+
+xhat_ll = (c - beta0_ll)/ beta1_ll
+
+var_xhat_ll = beta_cov_ll[1,1]/(beta1_ll^2) + beta_cov_ll[2,2]*(c - beta0_ll^2)/(beta1_ll^4) - 2*beta_cov_ll[1,2]*(c - beta0_ll)/(beta1_ll^3)
+
+xhat_ll + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_ll)
+
+ll_row = round(exp(xhat_ll + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_ll)), 3)
+```
+
+```{r}
+ci_df = data.frame(rbind(logit_row, probit_row, ll_row)) %>% 
+  rename(
+    "Estimate LD50" = X1,
+    "90% CI Lower" = X2,
+    "90% CI Upper" = X3
+  )
+
+row.names(ci_df) = c("logit", "probit", "log-log")
+
+ci_df %>% 
+  knitr::kable()
 ```
 

@@ -265,4 +265,94 @@ round(predict.glm(ll_fit, newdata = data.frame(dose = 0.01),type = 'response'), 
 
 ``` r
 # logit
+beta0_logit = logit_fit$coefficients[1]
+beta1_logit = logit_fit$coefficients[2]
+
+beta_cov_logit = vcov(logit_fit)
+
+xhat_logit = - beta0_logit/ beta1_logit
+
+var_xhat_logit = beta_cov_logit[1,1]/(beta1_logit^2) + beta_cov_logit[2,2]*(beta0_logit^2)/(beta1_logit^4)
+ - 2*beta_cov_logit[1,2]*beta0_logit/(beta1_logit^3)
 ```
+
+    ## (Intercept) 
+    ##  -0.1950322
+
+``` r
+xhat_logit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_logit)
+```
+
+    ## [1] 2.000000 1.216539 2.783461
+
+``` r
+logit_row = round(exp(xhat_logit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_logit)), 3)
+```
+
+``` r
+# probit
+beta0_probit = probit_fit$coefficients[1]
+beta1_probit = probit_fit$coefficients[2]
+
+beta_cov_probit = vcov(probit_fit)
+
+xhat_probit = - beta0_probit/ beta1_probit
+
+var_xhat_probit = beta_cov_probit[1,1]/(beta1_probit^2) + beta_cov_probit[2,2]*(beta0_probit^2)/(beta1_probit^4)
+ - 2*beta_cov_probit[1,2]*beta0_probit/(beta1_probit^3)
+```
+
+    ## (Intercept) 
+    ##  -0.1597875
+
+``` r
+xhat_probit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_probit)
+```
+
+    ## [1] 2.006310 1.289034 2.723586
+
+``` r
+probit_row = round(exp(xhat_probit + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_probit)), 3)
+```
+
+``` r
+# log-log
+c = log(-log(0.5))
+
+beta0_ll = ll_fit$coefficients[1]
+beta1_ll = ll_fit$coefficients[2]
+
+beta_cov_ll = vcov(ll_fit)
+
+xhat_ll = (c - beta0_ll)/ beta1_ll
+
+var_xhat_ll = beta_cov_ll[1,1]/(beta1_ll^2) + beta_cov_ll[2,2]*(c - beta0_ll^2)/(beta1_ll^4) - 2*beta_cov_ll[1,2]*(c - beta0_ll)/(beta1_ll^3)
+
+xhat_ll + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_ll)
+```
+
+    ## [1] 2.179428 1.355016 3.003841
+
+``` r
+ll_row = round(exp(xhat_ll + c(0, qnorm(0.05), - qnorm(0.05)) * sqrt(var_xhat_ll)), 3)
+```
+
+``` r
+ci_df = data.frame(rbind(logit_row, probit_row, ll_row)) %>% 
+  rename(
+    "Estimate LD50" = X1,
+    "90% CI Lower" = X2,
+    "90% CI Upper" = X3
+  )
+
+row.names(ci_df) = c("logit", "probit", "log-log")
+
+ci_df %>% 
+  knitr::kable()
+```
+
+|         | Estimate LD50 | 90% CI Lower | 90% CI Upper |
+|:--------|--------------:|-------------:|-------------:|
+| logit   |         7.389 |        3.375 |       16.175 |
+| probit  |         7.436 |        3.629 |       15.235 |
+| log-log |         8.841 |        3.877 |       20.163 |
