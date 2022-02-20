@@ -37,8 +37,7 @@ summary(logit_fit)
 logit_fit$coefficients
 round(logit_fit$coefficients[2], 3)
 
-# calculate CI - choice of confint vs confint.default??
-round(confint(logit_fit),3)
+# calculate CI (asymptotic)
 round(confint.default(logit_fit),3)
 
 # extract deviance
@@ -46,13 +45,73 @@ round(logit_fit$deviance, 3)
 # calculate deviance "by hand"
 round(sum(residuals(logit_fit, type = 'deviance' ) ^ 2), 3)
 
-# make prediction ??
-round(predict.glm(logit_fit, newdata = data.frame(rep(0.01, 5)),type = 'response'), 3) # type = "response" gives the predicted probabilities
-
-round(predict.glm(logit_fit,newdata=data.frame(x=0.01),type='r'),4)
+# make prediction
+round(predict.glm(logit_fit, newdata = data.frame(dose = 0.01), type = 'response'), 4) # type = "response" gives the predicted probabilities
 ```
 
 
 ## Probit link
 
+```{r}
+# fit a glm model
+probit_fit <- glm(
+  y1 ~ dose, 
+  data = df1,
+  family = binomial(link = 'probit'))
+
+summary(probit_fit)
+
+# extract estimated beta
+probit_fit$coefficients
+round(probit_fit$coefficients[2], 3)
+
+# calculate CI
+round(confint.default(probit_fit),3)
+
+# extract deviance
+round(probit_fit$deviance, 3)
+
+# calculate deviance "by hand"
+round(sum(residuals(probit_fit, type = 'deviance' ) ^ 2), 3)
+
+# make prediction
+round(predict.glm(probit_fit, newdata = data.frame(dose = 0.01),type = 'response'), 4)
+```
+
+
 ## Log-log link
+
+```{r}
+# fit a glm model
+ll_fit <- glm(
+  y1 ~ dose, 
+  data = df1,
+  family = binomial(link = 'cloglog'))
+
+summary(ll_fit)
+
+# extract estimated beta
+ll_fit$coefficients
+round(ll_fit$coefficients[2], 3)
+
+# calculate CI
+round(confint.default(ll_fit),3)
+
+# extract deviance
+round(ll_fit$deviance, 3)
+
+# calculate deviance "by hand"
+round(sum(residuals(ll_fit, type = 'deviance' ) ^ 2), 3)
+
+# make prediction
+round(predict.glm(ll_fit, newdata = data.frame(dose = 0.01),type = 'response'), 4)
+```
+
+
+## Estimate LD50 with 90% CI
+
+```{r}
+# logit
+
+```
+
