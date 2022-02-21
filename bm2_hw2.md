@@ -265,13 +265,23 @@ round(predict.glm(ll_fit, newdata = data.frame(dose = 0.01),type = 'response'), 
 
 ``` r
 # logit
+
 beta0_logit = logit_fit$coefficients[1]
 beta1_logit = logit_fit$coefficients[2]
 
+# inverse fisher information
 beta_cov_logit = vcov(logit_fit)
 
 xhat_logit = - beta0_logit/ beta1_logit
 
+# point estimate of x0
+round(exp(xhat_logit),3)
+```
+
+    ## (Intercept) 
+    ##       7.389
+
+``` r
 var_xhat_logit = beta_cov_logit[1,1]/(beta1_logit^2) + beta_cov_logit[2,2]*(beta0_logit^2)/(beta1_logit^4)
  - 2*beta_cov_logit[1,2]*beta0_logit/(beta1_logit^3)
 ```
@@ -356,3 +366,104 @@ ci_df %>%
 | logit   |         7.389 |        3.375 |       16.175 |
 | probit  |         7.436 |        3.629 |       15.235 |
 | log-log |         8.841 |        3.877 |       20.163 |
+
+# Question 2
+
+``` r
+# input data
+amount = seq(10, 90, 5)
+offers = c(4, 6, 10, 12, 39, 36, 22, 14, 10, 12, 8, 9, 3, 1, 5, 2, 1)
+enrolls = c(0, 2, 4, 2, 12, 14, 10, 7, 5, 5, 3, 5, 2, 0, 4, 2, 1)
+
+df2 = data.frame(amount, offers, enrolls)
+```
+
+``` r
+# fit a logistic regression model
+offer_fit <- glm(
+  cbind(enrolls, offers - enrolls) ~ amount, 
+  data = df2,
+  family = binomial(link = 'logit'))
+
+# conduct Hosmer-Lemeshow test for sparse data
+library(ResourceSelection)
+```
+
+    ## ResourceSelection 0.3-5   2019-07-22
+
+``` r
+hoslem.test(offer_fit$y, fitted(offer_fit), g=10)
+```
+
+    ## 
+    ##  Hosmer and Lemeshow goodness of fit (GOF) test
+    ## 
+    ## data:  offer_fit$y, fitted(offer_fit)
+    ## X-squared = 1.6111, df = 8, p-value = 0.9907
+
+``` r
+# model interpretation
+summary(offer_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = cbind(enrolls, offers - enrolls) ~ amount, family = binomial(link = "logit"), 
+    ##     data = df2)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.4735  -0.6731   0.1583   0.5285   1.1275  
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept) -1.64764    0.42144  -3.910 9.25e-05 ***
+    ## amount       0.03095    0.00968   3.197  0.00139 ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 21.617  on 16  degrees of freedom
+    ## Residual deviance: 10.613  on 15  degrees of freedom
+    ## AIC: 51.078
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+``` r
+# standard error
+sqrt(vcov(offer_fit)[2,2])
+```
+
+    ## [1] 0.009679756
+
+``` r
+# CI for odds ratio
+exp(confint.default(offer_fit))
+```
+
+    ##                  2.5 %    97.5 %
+    ## (Intercept) 0.08427711 0.4397136
+    ## amount      1.01205048 1.0511895
+
+``` r
+# scholarship of 40% enrollment rate
+x0fit = (log(2/3) + 1.648) / 0.031
+
+# 95% CI
+beta0_offer = offer_fit$coefficients[1]
+beta1_offer = offer_fit$coefficients[2]
+betacov = vcov(offer_fit)
+
+varx0 = betacov[1,1]/(beta1_offer^2)+betacov[2,2]*((c-beta0_offer)^2)/(beta1_offer^4)
++2*betacov[1,2]*(c-beta0_offer)/(beta1_offer^3)
+```
+
+    ## (Intercept) 
+    ##   -329.2271
+
+``` r
+round((x0fit+c(qnorm(0.025),0,-qnorm(0.025))*sqrt(varx0)),3)
+```
+
+    ## [1]  3.257 40.082 76.906

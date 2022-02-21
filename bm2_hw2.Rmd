@@ -112,12 +112,17 @@ round(predict.glm(ll_fit, newdata = data.frame(dose = 0.01),type = 'response'), 
 
 ```{r}
 # logit
+
 beta0_logit = logit_fit$coefficients[1]
 beta1_logit = logit_fit$coefficients[2]
 
+# inverse fisher information
 beta_cov_logit = vcov(logit_fit)
 
 xhat_logit = - beta0_logit/ beta1_logit
+
+# point estimate of x0
+round(exp(xhat_logit),3)
 
 var_xhat_logit = beta_cov_logit[1,1]/(beta1_logit^2) + beta_cov_logit[2,2]*(beta0_logit^2)/(beta1_logit^4)
  - 2*beta_cov_logit[1,2]*beta0_logit/(beta1_logit^3)
@@ -174,5 +179,57 @@ row.names(ci_df) = c("logit", "probit", "log-log")
 
 ci_df %>% 
   knitr::kable()
+```
+
+
+
+
+# Question 2
+
+```{r}
+# input data
+amount = seq(10, 90, 5)
+offers = c(4, 6, 10, 12, 39, 36, 22, 14, 10, 12, 8, 9, 3, 1, 5, 2, 1)
+enrolls = c(0, 2, 4, 2, 12, 14, 10, 7, 5, 5, 3, 5, 2, 0, 4, 2, 1)
+
+df2 = data.frame(amount, offers, enrolls)
+```
+
+```{r}
+# fit a logistic regression model
+offer_fit <- glm(
+  cbind(enrolls, offers - enrolls) ~ amount, 
+  data = df2,
+  family = binomial(link = 'logit'))
+
+# conduct Hosmer-Lemeshow test for sparse data
+library(ResourceSelection)
+hoslem.test(offer_fit$y, fitted(offer_fit), g=10)
+```
+
+```{r}
+# model interpretation
+summary(offer_fit)
+
+# standard error
+sqrt(vcov(offer_fit)[2,2])
+
+# CI for odds ratio
+exp(confint.default(offer_fit))
+```
+
+```{r}
+# scholarship of 40% enrollment rate
+x0fit = (log(2/3) + 1.648) / 0.031
+
+# 95% CI
+beta0_offer = offer_fit$coefficients[1]
+beta1_offer = offer_fit$coefficients[2]
+betacov = vcov(offer_fit)
+
+varx0 = betacov[1,1]/(beta1_offer^2)+betacov[2,2]*((c-beta0_offer)^2)/(beta1_offer^4)
++2*betacov[1,2]*(c-beta0_offer)/(beta1_offer^3)
+
+round((x0fit+c(qnorm(0.025),0,-qnorm(0.025))*sqrt(varx0)),3)
 ```
 
